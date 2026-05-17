@@ -1,4 +1,5 @@
-yamlname: Build Plugin
+yaml
+name: Build Plugin
 
 on:
   push:
