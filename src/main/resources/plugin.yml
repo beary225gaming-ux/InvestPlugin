@@ -1,0 +1,21 @@
+name: InvestPlugin
+version: '${project.version}'
+main: com.investplugin.InvestPlugin
+api-version: '1.21'
+description: Investment plugin with GUI menus
+authors: [InvestPlugin]
+depend: [Vault]
+
+commands:
+  invest:
+    description: Open the investment menu
+    usage: /invest
+    permission: investplugin.invest
+
+permissions:
+  investplugin.invest:
+    description: Allows a player to use /invest
+    default: true
+  investplugin.admin:
+    description: Allows admin to reload config
+    default: op

@@ -1,0 +1,27 @@
+# InvestPlugin Configuration
+
+# The maximum amount a player can have invested at one time (0 = unlimited)
+max-invest: 1000000.0
+
+# The rate multiplier applied per second to the invested amount
+# Example: rate: 0.001 means a player who invests 1000 earns 1.0 per second
+invest-rate: 0.001
+
+# How often (in ticks) the plugin pays out earnings (20 ticks = 1 second)
+payout-interval: 20
+
+# Messages (supports & color codes)
+messages:
+  prefix: "&8[&6Invest&8] &r"
+  no-permission: "&cYou don't have permission to use this command."
+  enter-amount: "&eType the amount you want to invest in chat. Type &ccancel &eto abort."
+  invalid-amount: "&cInvalid amount. Please enter a positive number."
+  not-enough-money: "&cYou don't have enough money to invest that amount."
+  exceeds-max: "&cThat would exceed your maximum investment limit of &6{max}&c."
+  invest-success: "&aSuccessfully invested &6{amount}&a. Total invested: &6{total}&a."
+  invest-cancelled: "&cInvestment cancelled."
+  collect-success: "&aYou collected &6{amount}&a from your investments."
+  nothing-to-collect: "&cYou have nothing to collect."
+  investment-deleted: "&cYour investment of &6{amount} &chas been deleted. You received nothing back."
+  auto-collect-on: "&aAuto-collect is now &lON&r&a."
+  auto-collect-off: "&cAuto-collect is now &lOFF&r&c."
