@@ -46,13 +46,25 @@ public class ChatListener implements Listener {
             return;
         }
 
-        double amount;
-        try {
-            amount = Double.parseDouble(message);
-        } catch (NumberFormatException e) {
-            player.sendMessage(plugin.getMessage("invalid-amount"));
-            return;
+    double amount;
+    try {
+        amount = parseAmount(message);
+    } catch (NumberFormatException e) {
+        player.sendMessage(plugin.getMessage("invalid-amount"));
+        return;
+    }
+    private double parseAmount(String input) throws NumberFormatException {
+        input = input.trim().toLowerCase();
+        if (input.endsWith("b")) {
+            return Double.parseDouble(input.replace("b", "")) * 1_000_000_000;
+        } else if (input.endsWith("m")) {
+            return Double.parseDouble(input.replace("m", "")) * 1_000_000;
+        } else if (input.endsWith("k")) {
+            return Double.parseDouble(input.replace("k", "")) * 1_000;
+        } else {
+            return Double.parseDouble(input);
         }
+    }
 
         if (amount <= 0) {
             player.sendMessage(plugin.getMessage("invalid-amount"));
