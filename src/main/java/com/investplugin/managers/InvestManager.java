@@ -86,23 +86,25 @@ public class InvestManager {
     public void processPayout() {
         double rate = plugin.getConfig().getDouble("invest-rate", 0.001);
 
-        for (Map.Entry<UUID, Double> entry : investedAmounts.entrySet()) {
-            UUID uuid = entry.getKey();
-            double invested = entry.getValue();
-            double earned = invested * rate;
+    for (Map.Entry<UUID, Double> entry : investedAmounts.entrySet()) {
+        UUID uuid = entry.getKey();
 
-            double current = claimableEarnings.getOrDefault(uuid, 0.0);
-            double newTotal = current + earned;
-            claimableEarnings.put(uuid, newTotal);
+        // Only earn while online
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null || !player.isOnline()) continue;
 
-            // Auto-collect
-            if (autoCollect.getOrDefault(uuid, false)) {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null && player.isOnline()) {
-                    collectEarnings(player);
-                }
-            }
+        double invested = entry.getValue();
+        double earned = invested * rate;
+
+        double current = claimableEarnings.getOrDefault(uuid, 0.0);
+        double newTotal = current + earned;
+        claimableEarnings.put(uuid, newTotal);
+
+        // Auto-collect
+        if (autoCollect.getOrDefault(uuid, false)) {
+            collectEarnings(player);
         }
+    }
 
         // Auto-save periodically (every ~5 minutes = 6000 ticks / 20 ticks per call ≈ 300 calls)
         // Simple approach: save every call since it's lightweight
