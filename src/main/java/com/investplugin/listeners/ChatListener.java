@@ -20,9 +20,7 @@ public class ChatListener implements Listener {
 
     private final InvestPlugin plugin;
 
-    // Players who are currently being asked to type an amount
     public static final Set<UUID> awaitingInput = new HashSet<>();
-    // Players who have typed an amount and are on the confirm screen
     public static final Map<UUID, Double> pendingAmount = new HashMap<>();
 
     public ChatListener(InvestPlugin plugin) {
@@ -46,13 +44,47 @@ public class ChatListener implements Listener {
             return;
         }
 
-    double amount;
-    try {
-        amount = parseAmount(message);
-    } catch (NumberFormatException e) {
-        player.sendMessage(plugin.getMessage("invalid-amount"));
-        return;
+        double amount;
+        try {
+            amount = parseAmount(message);
+        } catch (NumberFormatException e) {
+            player.sendMessage(plugin.getMessage("invalid-amount"));
+            return;
+        }
+
+        if (amount <= 0) {
+            player.sendMessage(plugin.getMessage("invalid-amount"));
+            return;
+        }
+
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            InvestManager manager = plugin.getInvestManager();
+
+            if (!plugin.getEconomy().has(player, amount)) {
+                player.sendMessage(plugin.getMessage("not-enough-money"));
+                return;
+            }
+
+            double maxInvest = manager.getMaxInvest();
+            double currentInvested = manager.getInvested(uuid);
+            if (maxInvest > 0 && currentInvested + amount > maxInvest) {
+                player.sendMessage(plugin.getMessage("exceeds-max")
+                        .replace("{max}", manager.formatMoney(maxInvest)));
+                return;
+            }
+
+            pendingAmount.put(uuid, amount);
+            player.openInventory(MenuBuilder.buildConfirmMenu(amount, plugin));
+        });
     }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        awaitingInput.remove(uuid);
+        pendingAmount.remove(uuid);
+    }
+
     private double parseAmount(String input) throws NumberFormatException {
         input = input.trim().toLowerCase();
         if (input.endsWith("b")) {
@@ -64,42 +96,5 @@ public class ChatListener implements Listener {
         } else {
             return Double.parseDouble(input);
         }
-    }
-
-        if (amount <= 0) {
-            player.sendMessage(plugin.getMessage("invalid-amount"));
-            return;
-        }
-
-        // Validate on main thread before opening GUI
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            InvestManager manager = plugin.getInvestManager();
-
-            // Check they have the money
-            if (!plugin.getEconomy().has(player, amount)) {
-                player.sendMessage(plugin.getMessage("not-enough-money"));
-                return;
-            }
-
-            // Check max invest
-            double maxInvest = manager.getMaxInvest();
-            double currentInvested = manager.getInvested(uuid);
-            if (maxInvest > 0 && currentInvested + amount > maxInvest) {
-                player.sendMessage(plugin.getMessage("exceeds-max")
-                        .replace("{max}", manager.formatMoney(maxInvest)));
-                return;
-            }
-
-            // Store pending amount and open confirm menu
-            pendingAmount.put(uuid, amount);
-            player.openInventory(MenuBuilder.buildConfirmMenu(amount, plugin));
-        });
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID uuid = event.getPlayer().getUniqueId();
-        awaitingInput.remove(uuid);
-        pendingAmount.remove(uuid);
     }
 }
