@@ -27,6 +27,8 @@ public class MenuListener implements Listener {
             handleMainMenu(event, player);
         } else if (title.equals(MenuBuilder.getConfirmTitle())) {
             handleConfirmMenu(event, player);
+        } else if (title.equals(MenuBuilder.getDeleteConfirmTitle())) {
+            handleDeleteConfirmMenu(event, player);
         }
     }
 
@@ -36,36 +38,31 @@ public class MenuListener implements Listener {
         InvestManager manager = plugin.getInvestManager();
 
         if (slot == MenuBuilder.MAIN_DELETE_SLOT) {
-            // Delete investment
             double invested = manager.getInvested(player.getUniqueId());
             if (invested <= 0) {
                 player.sendMessage(plugin.getMessage("nothing-to-collect"));
                 player.closeInventory();
                 return;
             }
-            manager.deleteInvestment(player);
-            player.closeInventory();
-            player.sendMessage(plugin.getMessage("investment-deleted")
-                    .replace("{amount}", manager.formatMoney(invested)));
+            // Open delete confirmation menu instead of deleting immediately
+            player.openInventory(MenuBuilder.buildDeleteConfirmMenu(invested));
+
         } else if (slot == MenuBuilder.MAIN_INFO_SLOT) {
-            // Prompt player to enter amount in chat
             player.closeInventory();
             player.sendMessage(plugin.getMessage("enter-amount"));
-            plugin.getInvestManager(); // ensure loaded
-            // Mark player as awaiting input
             ChatListener.awaitingInput.add(player.getUniqueId());
+
         } else if (slot == MenuBuilder.MAIN_COLLECT_SLOT) {
-            // Collect earnings
             double collected = manager.collectEarnings(player);
             player.closeInventory();
             if (collected <= 0) {
                 player.sendMessage(plugin.getMessage("nothing-to-collect"));
             } else {
                 player.sendMessage(plugin.getMessage("collect-success")
-                        .replace("{amount}", manager.formatMoney(collected)));
+                        .replace("{amount}", MenuBuilder.formatShort(collected)));
             }
+
         } else if (slot == MenuBuilder.MAIN_AUTO_SLOT) {
-            // Toggle auto-collect
             manager.toggleAutoCollect(player);
             boolean isOn = manager.isAutoCollect(player.getUniqueId());
             if (isOn) {
@@ -73,7 +70,6 @@ public class MenuListener implements Listener {
             } else {
                 player.sendMessage(plugin.getMessage("auto-collect-off"));
             }
-            // Refresh menu
             player.openInventory(MenuBuilder.buildMainMenu(player, plugin));
         }
     }
@@ -84,9 +80,10 @@ public class MenuListener implements Listener {
         InvestManager manager = plugin.getInvestManager();
 
         if (slot == MenuBuilder.CONFIRM_CANCEL_SLOT) {
-            player.closeInventory();
             ChatListener.pendingAmount.remove(player.getUniqueId());
+            player.closeInventory();
             player.sendMessage(plugin.getMessage("invest-cancelled"));
+
         } else if (slot == MenuBuilder.CONFIRM_OK_SLOT) {
             Double amount = ChatListener.pendingAmount.remove(player.getUniqueId());
             player.closeInventory();
@@ -96,12 +93,11 @@ public class MenuListener implements Listener {
                 return;
             }
 
-            // Validate max invest
             double maxInvest = manager.getMaxInvest();
             double currentInvested = manager.getInvested(player.getUniqueId());
             if (maxInvest > 0 && currentInvested + amount > maxInvest) {
                 player.sendMessage(plugin.getMessage("exceeds-max")
-                        .replace("{max}", manager.formatMoney(maxInvest)));
+                        .replace("{max}", MenuBuilder.formatShort(maxInvest)));
                 return;
             }
 
@@ -109,11 +105,29 @@ public class MenuListener implements Listener {
             if (success) {
                 double newTotal = manager.getInvested(player.getUniqueId());
                 player.sendMessage(plugin.getMessage("invest-success")
-                        .replace("{amount}", manager.formatMoney(amount))
-                        .replace("{total}", manager.formatMoney(newTotal)));
+                        .replace("{amount}", MenuBuilder.formatShort(amount))
+                        .replace("{total}", MenuBuilder.formatShort(newTotal)));
             } else {
                 player.sendMessage(plugin.getMessage("not-enough-money"));
             }
+        }
+    }
+
+    private void handleDeleteConfirmMenu(InventoryClickEvent event, Player player) {
+        event.setCancelled(true);
+        int slot = event.getRawSlot();
+        InvestManager manager = plugin.getInvestManager();
+
+        if (slot == MenuBuilder.DELETE_CANCEL_SLOT) {
+            // Go back to main menu
+            player.openInventory(MenuBuilder.buildMainMenu(player, plugin));
+
+        } else if (slot == MenuBuilder.DELETE_CONFIRM_SLOT) {
+            double invested = manager.getInvested(player.getUniqueId());
+            manager.deleteInvestment(player);
+            player.closeInventory();
+            player.sendMessage(plugin.getMessage("investment-deleted")
+                    .replace("{amount}", MenuBuilder.formatShort(invested)));
         }
     }
 }
